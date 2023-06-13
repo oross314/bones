@@ -16,9 +16,13 @@ val_file = 'params.p'
 
 
 class Net(nn.Module):
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super(Net, self).__init__()
-        sizes, self.convs, lins, csizes,  dropout, self.resnet, self.activation = args  
+        sizes, lins, self.activation = args 
+        self.convs = kwargs.get('convs', [])
+        csizes = kwargs.get('csizes', [])
+        dropout = kwargs.get('dropout', 0)
+        self.resnet = kwargs.get('resnet', False)
         if self.resnet:
             pads = ((np.array(csizes)-1)/2).astype(int)
             lsize = self.convs[-1] * sizes[0]*sizes[1]
@@ -97,7 +101,7 @@ class Model:
         self.lins, self.activation, self.optim,  self.batch_size, self.lr, self.indata, self.truth, self.cost =args
         
         keys = ('convs', 'csizes','lr_decay',  'saving', 'run_num', 'new_tar', 'save_weights',
-                'lr_min','dropout', 'resnet', 'train_frac', 'test_set', 'cov', 'max_batch' )
+                'lr_min','dropout', 'resnet', 'train_frac', 'test_set', 'cov', 'max_batch', 'check' )
         for kwarg in kwargs.keys():
             if kwarg not in keys:
                 raise Exception(kwarg + ' is not a valid key. Valid keys: ', keys )
@@ -125,8 +129,8 @@ class Model:
         self.datadims = len(self.indata.shape) - 1
                 
         self.dropout = kwargs.get('dropout', 0)
-        self.net = Net(self.indata.shape[1:], self.convs, self.lins,  self.csizes, self.dropout, 
-                             self.resnet, self.activation).double()
+        self.net = Net(self.indata.shape[1:], self.lins,  self.activation, convs = self.convs, 
+        csizes = self.csizes, dropout = self.dropout, resnet = self.resnet).double()
         
         self.init_lr = self.lr
         self.lr_decay = kwargs.get('lr_decay', 1)
@@ -150,7 +154,8 @@ class Model:
             
         self.run_num = kwargs.get('run_num', None)
         self.new_tar = kwargs.get('new_tar', False)
-        self.check()
+        if kwargs.get('check', True):
+            self.check()
         if self.run_num:
             vals = pickle.load(open(val_file,'rb')).loc[self.run_num]
             self.epoch = vals['epochs']
@@ -161,6 +166,7 @@ class Model:
 
         self.batches = int(np.floor(self.data[1].shape[0]/self.batch_size))
         self.max_batch = kwargs.get('max_batch', self.batches)
+        print(self.max_batch)
   
             
         
