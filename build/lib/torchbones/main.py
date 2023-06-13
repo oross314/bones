@@ -18,7 +18,24 @@ val_file = 'params.p'
 class Net(nn.Module):
     def __init__(self, *args, **kwargs):
         super(Net, self).__init__()
+        """Initializes the network.
+
+        Args:
+            sizes: (list of integers) the size of the input data
+            lins: (list of integers) the sizes of the linear layers
+            activation: (torch.nn or custom activation function) the activation function to use
+        Kwargs:
+            convs: (list of integers) the number of convolution channels in each layer
+            csizes: (list of integers) the size of the convolution kernel in each layer
+            dropout: (float, default 0) the dropout probability
+            resnet: (bool, default False) whether to use resnet architecture
+
+        Returns:
+            None
+        """
         sizes, lins, self.activation = args 
+        
+
         self.convs = kwargs.get('convs', [])
         csizes = kwargs.get('csizes', [])
         dropout = kwargs.get('dropout', 0)
@@ -98,6 +115,40 @@ class Net(nn.Module):
     
 class Model:
     def __init__(self, *args, **kwargs):
+        """Initializes the model object
+
+        Args:
+            lins: (list of integers) the sizes of the linear layers
+            activation: (torch.nn or custom activation function) the activation function to use
+            optim: (torch.optim) the optimizer to use
+            batch_size: (int) the batch size
+            lr: (float) the initial learning rate
+            indata: (numpy array) the input data
+            truth: (numpy array) the truth data
+            cost: (torch.nn or custom loss function) the loss function to use
+
+        kwargs:
+            convs: (list of integers) the number of convolution channels in each layer
+            csizes: (list of integers) the size of the convolution kernel in each layer
+            lr_decay: (float, default 1) the learning rate decay
+            saving: (bool, default False) whether to save the model
+            run_num: (int) the run number to continue from
+            new_tar: (bool, default False) whether to start saving to a new file
+            save_weights: (bool, default False) whether to save the model weights to a .tar file
+            lr_min: (float, default 1e-10) the minimum learning rate
+            dropout: (float, default 0) the dropout probability
+            resnet: (bool, default False) whether to use resnet architecture
+            train_frac: (float, default 4/5) the fraction of the data to use for training
+            test_set: (list of integers) the indices of the data to use for testing
+            cov: (numpy array, default 1) the covariance matrix of the truth values
+            max_batch: (int, default all) the maximum number of batches to use per epoch
+            check: (bool, default True) whether to check for other runs with the same parameters
+
+
+
+        Returns:
+            None
+        """
         self.lins, self.activation, self.optim,  self.batch_size, self.lr, self.indata, self.truth, self.cost =args
         
         keys = ('convs', 'csizes','lr_decay',  'saving', 'run_num', 'new_tar', 'save_weights',
@@ -249,9 +300,22 @@ class Model:
         
                 
     def run(self, **kwargs):
+        """This function runs training and testing of the model.
+
+        Kwargs:
+            lr: (float) learning rate
+            lr_decay: (float) learning rate decay per epoch
+            lr_min: (float) minimum learning rate
+            epochs: (int) number of epochs to run
+            training: (bool) whether to train the model
+            plot_ev: (bool) number of epochs between plots and loss reports
+
+        Returns:
+            None
+        """
         if len(self.trainerr)!=len(self.testerr):
             self.trainerr = self.trainerr[:-1]
-        keys = ('lr', 'lr_decay', 'lr_min', 'epochs', 'training', 'print_ev', 'plot_ev')
+        keys = ('lr', 'lr_decay', 'lr_min', 'epochs', 'training', 'plot_ev')
         for kwarg in kwargs.keys():
             if kwarg not in keys:
                 raise Exception(kwarg + ' is not a valid key. Valid keys: ', keys )
@@ -339,7 +403,7 @@ class Model:
 
 
             
-    def plot(self, med = True):
+    def plot(self):
         testtruth = self.data[5]
         output = self.testout
         if len(self.testerr) > 1:
