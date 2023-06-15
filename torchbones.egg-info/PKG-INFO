@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: torchbones
-Version: 1.2.5
+Version: 1.2.6
 Summary: A user friendly interface for implementing and training a deep neural network in pytorch
 Author: Olive Ross
 Author-email: ogr8@cornell.edu

@@ -35,7 +35,7 @@ class Net(nn.Module):
         """
         sizes, lins, self.activation = args 
         
-
+        
         self.convs = kwargs.get('convs', [])
         csizes = kwargs.get('csizes', [])
         dropout = kwargs.get('dropout', 0)
@@ -143,6 +143,7 @@ class Model:
             cov: (numpy array, default 1) the covariance matrix of the truth values
             max_batch: (int, default all) the maximum number of batches to use per epoch
             check: (bool, default True) whether to check for other runs with the same parameters
+            threads: (int, default 1) the number of threads to use
 
 
 
@@ -152,11 +153,11 @@ class Model:
         self.lins, self.activation, self.optim,  self.batch_size, self.lr, self.indata, self.truth, self.cost =args
         
         keys = ('convs', 'csizes','lr_decay',  'saving', 'run_num', 'new_tar', 'save_weights',
-                'lr_min','dropout', 'resnet', 'train_frac', 'test_set', 'cov', 'max_batch', 'check' )
+                'lr_min','dropout', 'resnet', 'train_frac', 'test_set', 'cov', 'max_batch', 'check', 'threads' )
         for kwarg in kwargs.keys():
             if kwarg not in keys:
                 raise Exception(kwarg + ' is not a valid key. Valid keys: ', keys )
-        
+        torch.set_num_threads(int(kwargs.get('threads', 1)))
         self.cov = kwargs.get('cov', 1)
         self.convs = kwargs.get('convs', [])
         self.csizes = kwargs.get('csizes', [])
@@ -221,8 +222,15 @@ class Model:
   
             
         
-    def params(self, re = True):
-            
+    def params(self, returns = True):
+        """This function returns the parameters of the model.
+        Kwargs:
+            returns: (bool) returns parameters when True, displays when False
+
+        Returns:
+            None        
+        """
+
         if not len(self.testerr):
             trainerr = None
             testerr = None
@@ -240,12 +248,13 @@ class Model:
                     self.data[3].shape[0],  str(self.optimizer).split()[0], 
                 self.batch_size,  self.init_lr,  self.lr_decay, self.lr, self.epoch,  trainerr, testerr,)
         df.loc[self.loc] = vals
-        if re == True:
+        if returns == True:
             return df
         else: display(df)
             
             
     def check(self):
+        """This function checks if the current parameters match any previous runs. """
         
         df = self.params()
         if os.path.exists(val_file):
@@ -286,6 +295,10 @@ class Model:
             print(f'saving weights to {self.save_file}')
             
     def save(self): 
+
+        """This function saves the model parameters."""
+        
+
         if self.save_tar:
             torch.save(self.net.state_dict(), open(self.save_file, 'wb'))
         vals = pickle.load(open(val_file, 'rb'))
@@ -375,6 +388,15 @@ class Model:
             self.epoch += 1
     
     def checkpoint(self, t = 10): 
+        """ This function checks if the training is going well.
+         If the current train loss is nan, inf, or >5x the loss at the previous checkpoint, 
+         it reverts to the last checkpoint.
+
+         Kwargs:
+            t: (int) the number of epochs between checkpoints
+
+        """
+
         if len(self.trainerr) < t +1:
             return 0
         if not self.epoch>t:
@@ -404,6 +426,7 @@ class Model:
 
             
     def plot(self):
+        """ This function plots the results of the training and testing. """
         testtruth = self.data[5]
         output = self.testout
         if len(self.testerr) > 1:
@@ -453,6 +476,7 @@ class Model:
         plt.show()
     
     def data_prep(self):
+        """ This function prepares the data for training and testing. """
         data = torch.tensor(self.indata).double()
         
         if len(data.shape) == 1:
